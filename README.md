@@ -1,5 +1,10 @@
 # Backbone-Multiviews
 
+### DEPENDENCIES: 
+
+* Backbone-Mediator
+* **Require JS** (for dynamic views) 
+               * 
 Life cycle for views, dynamic view loading & multi-page navigation.
 
 ## Defining Views
@@ -12,8 +17,11 @@ Views are define by adding a *view* hash on you view.
         }
     });
     
-There are 2 kinds of views
-    
+There are 2 kinds of views: 
+
+1. Static views.
+2. Dynamic views.
+
 ### Static Views
 
 Static views are *parts* of your view, like a UI component, a widget. Spliting a view in several component can help
@@ -46,7 +54,18 @@ property to false (the view will still be instanciated, ready to be opened).
 
 ### Dynamic Views
 
-Dynamic views
+Dynamic views allow you to define some views to be loaded on demand. The javascript code of those views won't
+be loaded until it is requested. It makes sense to use dynamic views for pages or your application, or for a 
+rarely used but heavy component.
+
+RequireJS is a dependency for dynamic views. It is recommanded that 
+the view to be loaded dynamically follow the AMD format. 
+
+    var view = Backbone.View.extend({
+        '#pages': {
+            myPage: 'path/to/my/view'  // Will look for path/to.my/view.js
+        }
+    });  
 
 ## View Life Cycle
 
