@@ -2,10 +2,10 @@
 
 ### DEPENDENCIES: 
 
+Life cycle for views, dynamic view loading & multi-page navigation.
+
 * Backbone-Mediator
 * **Require JS** (for dynamic views) 
-               * 
-Life cycle for views, dynamic view loading & multi-page navigation.
 
 ## Defining Views
 
