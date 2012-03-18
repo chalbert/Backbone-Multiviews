@@ -2,6 +2,52 @@
 
 Life cycle for views, dynamic view loading & multi-page navigation.
 
+## Defining Views
+
+Views are define by adding a *view* hash on you view. 
+
+    var view = Backbone.View.extend({
+        views: {
+            // My views
+        }
+    });
+    
+There are 2 kinds of views
+    
+### Static Views
+
+Static views are *parts* of your view, like a UI component, a widget. Spliting a view in several component can help
+re-using your code.
+
+Static views are added to the *views* hash as a *name* & *view* couple:
+
+    var listView = Backbone.View.extend({...})
+
+    var view = Backbone.View.extend({
+        views: {
+            list: listView
+        }
+    });    
+    
+Static views are automatically opened when the parent view is opened.
+In some cases, you might want to open your static view later, manually. You can achieve that setting the 'autoOpen'
+property to false (the view will still be instanciated, ready to be opened).
+
+    var listView = Backbone.View.extend({
+        autoOpen: false
+        ...
+    })
+
+    var view = Backbone.View.extend({
+        views: {
+            list: listView // Won't be opened automatically opened
+        }
+    });   
+
+### Dynamic Views
+
+Dynamic views
+
 ## View Life Cycle
 
 Backbone-Multiviews introduce a more complete life cycle so to manage complex view interaction.
@@ -65,10 +111,6 @@ Reverse of 'setup'.
 ### hide()
 
 * hide the dom element (*this.$el.stop().hide()*)
-        
-## Child views
 
-### Static Views
-
-### Dynamic Views
+## Overriding & extanding the view life cycle
     
