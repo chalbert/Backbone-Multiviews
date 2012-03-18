@@ -98,6 +98,7 @@ define([
         if (this.activePage && (page === this.activePage)) return;
         if (this.activePage) this.publish('close:' + this.activePage);
         this.activePage = page;
+
       }, this);
 
       if (route.indexOf('*') !== -1) {
@@ -228,14 +229,12 @@ define([
         if (!(view instanceof Backbone.View)) {
           _.each(view, function(dynamicView, dynamicViewName){
             //| > If not a view, then not yet load - so don't try to close
-            if (dynamicView instanceof Backbone.View) {
-              dynamicView.close();
-            }
-          });
+            this.publish('close:' + dynamicViewName);
+          }, this);
         } else {
           view.close();
         }
-      });
+      }, this);
 
       this.opened = false;
       this.hide();
