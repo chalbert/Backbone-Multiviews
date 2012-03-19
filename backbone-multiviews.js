@@ -1,6 +1,7 @@
 define([
   'underscore',
-  'libs/vendor/backbone/backbone'
+  'backbone',
+  'backbone-mediator'
 ], function(_, Backbone) {
 
   var router = new Backbone.Router();
@@ -134,12 +135,13 @@ define([
   Backbone.View = Backbone.View.extend({
     initialize: function(options){
       options || (options = {});
+
       this.setHtml(options.html);
       this.$el.addClass('view');
-
       this.setViews();
+
       registerPages.call(this, this.pages);
-      this._super('initialize', arguments);
+      if (this._super) this._super('initialize', arguments);
     },
 
 
@@ -247,7 +249,6 @@ define([
 
       this.undelegateEvents();
     }
-
 
   });
 
