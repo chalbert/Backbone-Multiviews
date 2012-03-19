@@ -18,11 +18,11 @@ define([
       if (!_.isString(url)) return;
 
       //| > Subscribe to the first opening, when the view is not loaded
-      this.subscribeOnce('open:' + name, function(){
+      Backbone.Mediator.subscribeOnce('open:' + name, function(){
         var args = _.toArray(arguments);
-        this.subscribeOnce('loaded:' + name, function(){
+        Backbone.Mediator.subscribeOnce('loaded:' + name, function(){
           args.unshift('open:' + name);
-          this.publish.apply(null, args);
+          Backbone.Mediator.publish.apply(null, args);
         }, this);
         loadView.call(this, container, name, url);
       }, this);
@@ -33,7 +33,7 @@ define([
 
   function loadView(container, name, url){
 
-    this.publish('loading', name);
+    Backbone.Mediator.publish('loading', name);
 
     require([url], $.proxy(function(view) {
 
@@ -41,7 +41,7 @@ define([
       view._parent = this;
       container.append(view.render().$el);
 
-      this.subscribe('open:' + name, function(attributes){
+      Backbone.Mediator.subscribe('open:' + name, function(attributes){
 
         container.addClass('view-' + name);
         var args = _.compact(_.toArray(arguments));
@@ -54,14 +54,14 @@ define([
 
       }, this);
 
-      this.subscribe('close:' + name, function(){
+      Backbone.Mediator.subscribe('close:' + name, function(){
 
         container.removeClass('view-' + name);
 
         view.close.apply(view, arguments);
       });
 
-      this.publish('loaded:' + name);
+      Backbone.Mediator.publish('loaded:' + name);
 
     }, this))
   }
@@ -81,10 +81,10 @@ define([
         _.each(args, function(arg, i){
           if (slugs[i]) attrs[slugs[i]] = arg;
         });
-        this.publish.apply(this, ['open:' + page, attrs]);
+        Backbone.Mediator.publish.apply(this, ['open:' + page, attrs]);
       });
 
-      this.subscribe('go:' + page, function() {
+      Backbone.Mediator.subscribe('go:' + page, function() {
         var args = _.toArray(arguments),
             newRoute = route.split('*')[0];
 
@@ -94,15 +94,15 @@ define([
 
       }, this);
 
-      this.subscribe('open:' + page, function(){
+      Backbone.Mediator.subscribe('open:' + page, function(){
         if (this.activePage && (page === this.activePage)) return;
-        if (this.activePage) this.publish('close:' + this.activePage);
+        if (this.activePage) Backbone.Mediator.publish('close:' + this.activePage);
         this.activePage = page;
 
       }, this);
 
       if (route.indexOf('*') !== -1) {
-        this.subscribe('loaded:' + page, function(){
+        Backbone.Mediator.subscribe('loaded:' + page, function(){
           // To open submodule, we reload url, which will map new routes
           if (Backbone.history.options) Backbone.history.loadUrl();
         }, this);
@@ -220,8 +220,6 @@ define([
     //| # Base closing method
     close: function(){
       //| > Undelegate shorcuts
-      this.publish('shortcut:remove', this.shortcuts, this);
-
       this.clean();
 
       _.each(this.views, function(view, viewName){
@@ -229,7 +227,7 @@ define([
         if (!(view instanceof Backbone.View)) {
           _.each(view, function(dynamicView, dynamicViewName){
             //| > If not a view, then not yet load - so don't try to close
-            this.publish('close:' + dynamicViewName);
+            Backbone.Mediator.publish('close:' + dynamicViewName);
           }, this);
         } else {
           view.close();
