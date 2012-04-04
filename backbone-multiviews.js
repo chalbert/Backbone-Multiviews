@@ -1,117 +1,12 @@
 define([
   'underscore',
-  'libs/vendor/backbone/backbone'
+  'backbone',
+  'backbone-mediator'
 ], function(_, Backbone) {
+  'use strict';
 
-  var router = new Backbone.Router();
-
-  function registerViews(selector, views){
-
-    var container = (selector[0] === '$')
-        ? this.$get(selector.replace('$', ''))
-        : (selector === '') ? this.$el : this.$el.find(selector);
-
-    _.each(views, function(url, name){
-
-      //| > If the value is not a string, it must already an object which mean the
-      //| > view is already loaded
-      if (!_.isString(url)) return;
-
-      //| > Subscribe to the first opening, when the view is not loaded
-      Backbone.Mediator.subscribeOnce('open:' + name, function(){
-        var args = _.toArray(arguments);
-        Backbone.Mediator.subscribeOnce('loaded:' + name, function(){
-          args.unshift('open:' + name);
-          Backbone.Mediator.publish.apply(null, args);
-        }, this);
-        loadView.call(this, container, name, url);
-      }, this);
-
-    }, this);
-
-  }
-
-  function loadView(container, name, url){
-
-    Backbone.Mediator.publish('loading', name);
-
-    require([url], $.proxy(function(view) {
-
-      var view = new view();
-      view._parent = this;
-      container.append(view.render().$el);
-
-      Backbone.Mediator.subscribe('open:' + name, function(attributes){
-
-        container.addClass('view-' + name);
-        var args = _.compact(_.toArray(arguments));
-        //| > If the view is already opened, and attributes haven't changed, ignore
-        if (view.opened && _.isEqual(view.attributes, _.extend({}, view.attributes, attributes))) {
-          return
-        };
-
-        view.open.apply(view, args);
-
-      }, this);
-
-      Backbone.Mediator.subscribe('close:' + name, function(){
-
-        container.removeClass('view-' + name);
-
-        view.close.apply(view, arguments);
-      });
-
-      Backbone.Mediator.publish('loaded:' + name);
-
-    }, this))
-  }
-
-
-  function registerPages(pages){
-
-    _.each(pages, function(route, page){
-
-      var slugs;
-
-      slugs = getSlugs(route);
-
-      router.route(route, page, function(){
-        var args = _.toArray(arguments),
-            attrs = {};
-        _.each(args, function(arg, i){
-          if (slugs[i]) attrs[slugs[i]] = arg;
-        });
-        Backbone.Mediator.publish.apply(this, ['open:' + page, attrs]);
-      });
-
-      Backbone.Mediator.subscribe('go:' + page, function() {
-        var args = _.toArray(arguments),
-            newRoute = route.split('*')[0];
-
-        newRoute = replaceRouteArgs(newRoute, args);
-
-        router.navigate(newRoute, {trigger: true});
-
-      }, this);
-
-      Backbone.Mediator.subscribe('open:' + page, function(){
-        if (this.activePage && (page === this.activePage)) return;
-        if (this.activePage) Backbone.Mediator.publish('close:' + this.activePage);
-        this.activePage = page;
-
-      }, this);
-
-      if (route.indexOf('*') !== -1) {
-        Backbone.Mediator.subscribe('loaded:' + page, function(){
-          // To open submodule, we reload url, which will map new routes
-          if (Backbone.history.options) Backbone.history.loadUrl();
-        }, this);
-      }
-
-    }, this);
-
-
-  }
+  var router = new Backbone.Router(),
+      BackboneMultiview;
 
   function getSlugs(route){
     var matches = route.match(/:\w+/g);
@@ -130,19 +25,144 @@ define([
     return route;
   }
 
+  BackboneMultiview = {
+    registerViews: function(selector, views){
+
+      var container = (selector[0] === '$')
+          ? this.$get(selector.replace('$', ''))
+          : (selector === '') ? this.$el : this.$el.find(selector);
+
+      _.each(views, function(url, name){
+
+        //| > If the value is not a string, it must already an object which mean the
+        //| > view is already loaded
+        if (!_.isString(url)) return;
+
+        //| > Subscribe to the first opening, when the view is not loaded
+        Backbone.Mediator.subscribeOnce('open:' + name, function(){
+          var args = _.toArray(arguments);
+          Backbone.Mediator.subscribeOnce('loaded:' + name, function(){
+            args.unshift('open:' + name);
+            Backbone.Mediator.pub.apply(null, args);
+          }, this);
+          this.loadView(container, name, url);
+        }, this);
+
+      }, this);
+
+    },
+
+    loadView: function(container, name, url){
+
+      Backbone.Mediator.pub('loading', name);
+
+      require([url], $.proxy(function(View) {
+
+        var view = new View();
+        view._parent = this;
+        container.append(view.render().$el);
+
+        Backbone.Mediator.sub('open:' + name, function(attributes){
+
+          container.addClass('view-' + name);
+          var args = _.compact(_.toArray(arguments));
+          //| > If the view is already opened, and attributes haven't changed, ignore
+          if (view.opened && _.isEqual(view.attributes, _.extend({}, view.attributes, attributes))) {
+            return;
+          }
+
+          view.open.apply(view, args);
+
+        }, this);
+
+        Backbone.Mediator.sub('close:' + name, function(){
+
+          container.removeClass('view-' + name);
+
+          view.close.apply(view, arguments);
+        });
+
+        Backbone.Mediator.pub('loaded:' + name);
+
+      }, this));
+    },
+
+    registerPages: function(pages){
+
+      _.each(pages, function(route, page){
+
+        var slugs;
+
+        slugs = getSlugs(route);
+
+        router.route(route, page, function(){
+          var args = _.toArray(arguments),
+              attrs = {};
+          _.each(args, function(arg, i){
+            if (slugs[i]) attrs[slugs[i]] = arg;
+          });
+          Backbone.Mediator.pub.apply(this, ['open:' + page, attrs]);
+        });
+
+        Backbone.Mediator.sub('go:' + page, function() {
+          var args = _.toArray(arguments),
+              newRoute = route.split('*')[0];
+
+          newRoute = replaceRouteArgs(newRoute, args);
+
+          router.navigate(newRoute, {trigger: true});
+
+        }, this);
+
+        Backbone.Mediator.sub('open:' + page, function(){
+          if (this.activePage && (page === this.activePage)) return;
+          if (this.activePage) Backbone.Mediator.pub('close:' + this.activePage);
+          this.activePage = page;
+
+        }, this);
+
+        if (route.indexOf('*') !== -1) {
+          Backbone.Mediator.sub('loaded:' + page, function(){
+            // To open submodule, we reload url, which will map new routes
+            if (Backbone.history.options) Backbone.history.loadUrl();
+          }, this);
+        }
+
+      }, this);
+
+    }
+
+  };
+
+  _.extend(Backbone.View.prototype, BackboneMultiview);
+
+
 
   Backbone.View = Backbone.View.extend({
+
+    constructor: function(options){
+      this.cid = _.uniqueId('view');
+      this._configure(options || {});
+      this._ensureElement();
+      this.initialize.apply(this, arguments);
+      // We remove the delegation of events from initialization,
+      // it'll be called from 'setup'
+    },
+
     initialize: function(options){
       options || (options = {});
       this.setHtml(options.html);
       this.$el.addClass('view');
 
       this.setViews();
-      registerPages.call(this, this.pages);
+      this.registerPages(this.pages);
       this._super('initialize', arguments);
     },
 
-
+    /**
+     * Setup the bindings, listenners, etc.
+     * Everything we want off when the view is not used
+     */
     setup: function(){
       // | > If we destroy the model, the view need to go
       if (this.model) {
@@ -162,7 +182,7 @@ define([
       //| > This need to be setup only if not already opened
       if (!this.opened) this.setup();
 
-      if (this.model) {
+      if (this.model && !this.model.collection) {
         this.model.clear();
         if (this.model.configure) this.model.configure(this.attributes || {});
         this.model.fetch();
@@ -180,7 +200,7 @@ define([
         if (!(view instanceof Backbone.View)) return;
 
         if (view.autoOpen !== false) {
-          view.open(this.attributes)
+          view.open(this.attributes);
         }
       }, this);
     },
@@ -196,15 +216,15 @@ define([
 
     //| # Convention base loading of child views. Meant to load 'parts' of the main view.
     setViews: function(){
-      _.each(this.views, function(view, name){
-        if (_.isFunction(view)) {
-          var el = view.prototype.el;
+      _.each(this.views, function(View, name){
+        if (_.isFunction(View)) {
+          var el = View.prototype.el;
           // Lookup first inside the view, then as a global element
-          this.views[name] = new view({el: (this.$el.find(el)[0] || $(el)[0])});
+          this.views[name] = new View({el: (this.$el.find(el)[0] || $(el)[0])});
           // Keep a reference to the parent view
           this.views[name]._parent = this;
         } else {
-          registerViews.call(this, name, view);
+          this.registerViews(name, View);
         }
       }, this);
     },
@@ -227,7 +247,7 @@ define([
         if (!(view instanceof Backbone.View)) {
           _.each(view, function(dynamicView, dynamicViewName){
             //| > If not a view, then not yet load - so don't try to close
-            Backbone.Mediator.publish('close:' + dynamicViewName);
+            Backbone.Mediator.pub('close:' + dynamicViewName);
           }, this);
         } else {
           view.close();
